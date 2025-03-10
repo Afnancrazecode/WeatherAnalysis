@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Symphony</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Poppins', sans-serif;
+            color: #fff;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .hero-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .crystal-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transform-style: preserve-3d;
+            overflow: hidden;
+        }
+
+        .crystal-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg, 
+                rgba(255,255,255,0.15) 0%,
+                rgba(255,255,255,0) 50%,
+                rgba(255,255,255,0.15) 100%);
+            z-index: -1;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-1rem); }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+        }
+
+        .dynamic-text {
+            background: linear-gradient(45deg, #89CFF0, #FFFFFF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Rain Effect */
+        .rain-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 50px;
+            background: linear-gradient(transparent, #89CFF0);
+            animation: rain 1s linear infinite;
+        }
+
+        @keyframes rain {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+
+        /* Snow Effect */
+        .snow-flake {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: snow 10s linear infinite;
+        }
+
+        @keyframes snow {
+            0% { transform: translateY(-100vh) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(360deg); }
+        }
+
+        /* Stars Effect */
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center">
+    <!-- Background Elements -->
+    <div id="threejs-container" class="absolute inset-0 z-0"></div>
+    <div id="weather-effects" class="absolute inset-0 z-1"></div>
+
+    <!-- Main Card -->
+    <div class="hero-container">
+        <div class="crystal-card w-96 p-8 relative">
+            <!-- Weather Icon -->
+            <div class="weather-icon text-center mb-6" id="main-icon">⛅</div>
+            
+            <!-- Location -->
+            <h1 class="text-3xl font-bold text-center dynamic-text mb-2">
+                <span th:text="${city}"></span>
+            </h1>
+            <p class="text-center text-white/80 mb-8">
+                <span th:text="${country}"></span> • 
+                <span th:text="${weather}"></span>
+            </p>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="p-4 bg-white/5 rounded-xl backdrop-blur-sm">
+                    <p class="text-sm text-white/60">Temperature</p>
+                    <p class="text-2xl font-bold dynamic-text" th:text="${temp} + '°C'"></p>
+                </div>
+                <div class="p-4 bg-white/5 rounded-xl backdrop-blur-sm">
+                    <p class="text-sm text-white/60">Feels Like</p>
+                    <p class="text-2xl font-bold dynamic-text" th:text="${feels_like} + '°C'"></p>
+                </div>
+                <div class="p-4 bg-white/5 rounded-xl backdrop-blur-sm">
+                    <p class="text-sm text-white/60">Wind</p>
+                    <p class="text-2xl font-bold dynamic-text" th:text="${wind_speed} + ' m/s'"></p>
+                </div>
+                <div class="p-4 bg-white/5 rounded-xl backdrop-blur-sm">
+                    <p class="text-sm text-white/60">Humidity</p>
+                    <p class="text-2xl font-bold dynamic-text" th:text="${humidity} + '%'"></p>
+                </div>
+            </div>
+
+            <!-- Sunrise/Sunset -->
+            <div class="flex justify-between text-sm">
+                <div class="text-center">
+                    <div class="text-xl">🌅</div>
+                    <span th:text="${sunrise}"></span>
+                </div>
+                <div class="text-center">
+                    <div class="text-xl">🌆</div>
+                    <span th:text="${sunset}"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Background
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-container').appendChild(renderer.domElement);
+
+        // Create particle system
+        const particles = new THREE.BufferGeometry();
+        const particleCount = 1000;
+        const posArray = new Float32Array(particleCount * 3);
+
+        for(let i = 0; i < particleCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+        }
+
+        particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const material = new THREE.PointsMaterial({
+            size: 0.005,
+            color: '#89CFF0'
+        });
+        const particleMesh = new THREE.Points(particles, material);
+        scene.add(particleMesh);
+
+        camera.position.z = 2;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            particleMesh.rotation.x += 0.001;
+            particleMesh.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Weather Effect System
+        function createWeatherEffect() {
+            const container = document.getElementById('weather-effects');
+            const weatherCondition = "<th:block th:text='${weather}'></th:block>".toLowerCase();
+            
+            // Clear previous effects
+            container.innerHTML = '';
+
+            if(weatherCondition.includes('rain')) {
+                for(let i = 0; i < 100; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'rain-drop';
+                    drop.style.left = Math.random() * 100 + '%';
+                    drop.style.animationDuration = Math.random() * 0.5 + 0.5 + 's';
+                    container.appendChild(drop);
+                }
+            } else if(weatherCondition.includes('snow')) {
+                for(let i = 0; i < 50; i++) {
+                    const flake = document.createElement('div');
+                    flake.className = 'snow-flake';
+                    flake.style.left = Math.random() * 100 + '%';
+                    flake.style.animationDuration = Math.random() * 3 + 5 + 's';
+                    flake.style.opacity = Math.random();
+                    container.appendChild(flake);
+                }
+            } else {
+                // Create stars for clear weather
+                for(let i = 0; i < 100; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.animationDelay = Math.random() * 3 + 's';
+                    container.appendChild(star);
+                }
+            }
+        }
+
+        // Initial setup
+        createWeatherEffect();
+
+        // Anime.js Animations
+        anime({
+            targets: '.crystal-card',
+            scale: [0.9, 1],
+            opacity: [0, 1],
+            duration: 1000,
+            easing: 'easeOutExpo'
+        });
+
+        anime({
+            targets: '.weather-icon',
+            rotate: [90, 0],
+            scale: [0, 1],
+            duration: 1000,
+            easing: 'easeOutBack'
+        });
+
+        anime({
+            targets: '.dynamic-text',
+            opacity: [0, 1],
+            translateY: [20, 0],
+            delay: anime.stagger(100),
+            duration: 800,
+            easing: 'easeOutExpo'
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
